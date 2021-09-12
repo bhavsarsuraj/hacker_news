@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hacker_news/app/data/models/news_response.dart';
 import 'package:hacker_news/app/data/providers/news_provider.dart';
+import 'package:hacker_news/app/utils/constants.dart';
+import 'package:hacker_news/app/utils/snackbars.dart';
 
 class HomeController extends GetxController {
   final _apiClient = NewsApiClient();
@@ -32,7 +34,7 @@ class HomeController extends GetxController {
         time: Duration(milliseconds: 500));
   }
 
-  void getNews() async {
+  Future<void> getNews() async {
     try {
       articles.assignAll([]);
       loading = true;
@@ -41,13 +43,11 @@ class HomeController extends GetxController {
       if (newArticles == null) return;
       articles.addAll(newArticles);
     } catch (e) {
-      print(e);
       loading = false;
     }
   }
 
   void _didChangeQuery() {
-    if (query.trim().isEmpty) return;
     _page = 0;
     getNews();
   }
@@ -56,9 +56,7 @@ class HomeController extends GetxController {
 
   void _addListener() {
     scrollController.addListener(() {
-      if (scrollController.position.maxScrollExtent ==
-              scrollController.position.pixels &&
-          !loading) {
+      if (scrollController.position.extentAfter < 500 && !paginationLoading) {
         _page++;
         _getNextPageNews();
       }
@@ -75,8 +73,15 @@ class HomeController extends GetxController {
       articles.addAll(newArticles);
       update();
     } catch (e) {
-      print(e);
+      if (!Get.isSnackbarOpen)
+        Get.showSnackbar(
+          Snackbars.errorSnackBar(message: Strings.somethingWentWrong),
+        );
       paginationLoading = false;
     }
+  }
+
+  void didTapSeeFullStory(String url) {
+    _apiClient.launchNewsPage(url);
   }
 }
